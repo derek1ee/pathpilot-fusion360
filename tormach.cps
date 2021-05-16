@@ -4,8 +4,8 @@
 
   Tormach PathPilot post processor configuration.
 
-  $Revision: 2593 $
-  $Date: 2020-12-17 23:24:18 +0000 (Thu, 17 Dec 2020) $
+  $Revision: 2635 $
+  $Date: 2021-05-09 18:44:21 +0100 (Sun, 09 May 2021) $
   $Author: david $
   
   Modified by David Loomes to support integrated Fusion 360 probing in PathPilot
@@ -48,97 +48,149 @@ allowedCircularPlanes = undefined; // allow any circular motion
 
 
 
+// group names
+var ncHeaderGroup = "1 - NC Header",
+machineConfigGroup = "2 - Machine config",
+retractiionGroup = "3 - Retraction",
+afterFinishedGroup = "4 - At end of program",
+probingGroup = "5 - Integrated probing",
+etsGroup = "6 - Toolsetter",
+tappingGroup = "7 - Tapping",
+usbIoGroup = "8 - USB I/O",
+coolantGroup = "9 - Coolant";
+
 // user-defined properties
 properties = {
-	writeMachine: true, // write machine
-	writeTools: true, // writes the tools
-	writeVersion: false, // include version info
-	/*
-	useG30: true, // disable to avoid G30 output
-	useG28: false, // move table to "load" position at end of program
-	*/
-	retractOnProgramBegin: "g30z",
-	retractOnProgramEnd: "g30z",
-	retractOnTCBegin: "g30z",
-	retractOnTCEnd: "none",
-	retractOnWCSChange: "g30z",
-	retractOnWorkPlaneChange: "g30z",
-	retractOnManualNCStop: "none",
-//	substituteRapidAfterRetract: false,
-	
-	useM6: true, // disable to avoid M6 output
-	showSequenceNumbers: false, // show sequence numbers
-	sequenceNumberStart: 10, // first sequence number
-	sequenceNumberIncrement: 10, // increment for sequence numbers
-	sequenceNumberOperation: true, // output sequence numbers at operation start only
-	optionalStopTool: true, // optional stop before tool change
-	optionalStopOperation: false, // optional stop between all operations
-	separateWordsWithSpace: true, // specifies that the words should be separated with a white space
-	useRadius: false, // specifies that arcs should be output using the radius (R word) instead of the I, J, and K words.
-	dwellInSeconds: true, // specifies the unit for dwelling: true:seconds and false:milliseconds.
-	forceWorkOffset: false, // forces the work offset code at tool changes
-	rotaryTableAxis: "none", // none, X, Y, Z, -X, -Y, -Z
-	smartCoolEquipped: false, // machine has smart coolant attachment
-	multiCoolEquipped: false, // machine has multi-coolant module
-	smartCoolToolSweepPercentage: 100, // tool length percentage to sweep coolant
-	multiCoolAirBlastSeconds: 4, // air blast time when equipped with Multi-Coolant module
-	disableCoolant: false, // disables all coolant codes
-	reversingHead: false, // uses self-reversing tapping head
-	reversingHeadFeed: 2.0, // percentage of tapping feed to retract the tool with reversing tapping head
-	maxTool: 256, // maximum tool/offset number
-	
-	// properties controlling integrated probing
-	probeFastSpeed: 20.0,
-	probeSlowSpeed: 1.0,
-	probeSlowDistance: 0.04,
+	writeMachine: {title:"Write machine", description:"Output the machine settings in the header of the code.", group:ncHeaderGroup, type:"boolean", value:true},
 
-	// properties to control tool setter functions
-	etsTolerance: 0.005,	// for ETS test operations, what difference between measured and tool table length is allowed
-	etsDiameterLimit: 0.5, // max diameter of tools that can be used with the ETS
-	etsBeforeStart: "none",	// default is no checking before program start
-	etsBeforeUse: "none",	// default to no ets check before use of a tool
-	etsAfterUse: "none",	// default to no ets check after tool has been used
-	etsAfterOperation: "none",	// default to no ets check after each machining operation
-	
-	//properties to allow tapping on a PCNC440
-	expandTapping: false,
-	tapSpeedFactor: 1.0,
-	spindleReverseChannel: "0",
-	
-	// properties to use usb i/o module
-	spindleRunningChannel: "0",
-	toolChangeInProgressChannel: "0",
-	floodCoolingOnChannel: "0",
-	mistCoolingOnChannel: "0",
-	etsInUseChannel: "0",
-	etsReadyInput: "0",
-	progRunningChannel: "0",
-	probeInUseChannel: "0"
-};
+	writeTools: {title:"Write tool list", description:"Output a tool list in the header of the code.", group:ncHeaderGroup, type:"boolean", value: true},
 
-// user-defined property definitions
-propertyDefinitions = {
-	writeMachine: {title:"Write machine", description:"Output the machine settings in the header of the code.", group:0, type:"boolean"},
-	writeTools: {title:"Write tool list", description:"Output a tool list in the header of the code.", group:0, type:"boolean"},
-	writeVersion: {title:"Write version", description:"Write the version number in the header of the code.", group:0, type:"boolean"},
+	writeVersion: {title:"Write version", description:"Write the version number in the header of the code.", group:ncHeaderGroup, type:"boolean", value: false},
 
-	useM6: {title:"Use M6", description:"Disable to avoid outputting M6.", group:1, type:"boolean"},
-	showSequenceNumbers: {title:"Use sequence numbers", description:"Use sequence numbers for each block of outputted code.", group:1, type:"boolean"},
-	sequenceNumberStart: {title:"Start sequence number", description:"The number at which to start the sequence numbers.", group:1, type:"integer"},
-	sequenceNumberIncrement: {title:"Sequence number increment", description:"The amount by which the sequence number is incremented by in each block.", group:1, type:"integer"},
-	sequenceNumberOperation: {title:"Sequence number at operation only", description:"Use sequence numbers at start of operation only.", group:1, type:"boolean"},
-	optionalStopTool: {title:"Optional stop between tools", description:"Outputs optional stop code prior to a tool change.", group:1, type:"boolean"},
-	optionalStopOperation: {title:"Optional stop between operations", description:"Outputs optional stop code prior between all operations.", group:1, type:"boolean"},
-	separateWordsWithSpace: {title:"Separate words with space", description:"Adds spaces between words if 'yes' is selected.", group:1, type:"boolean"},
-	useRadius: {title:"Radius arcs", description:"If yes is selected, arcs are outputted using radius values rather than IJK.", group:1, type:"boolean"},
-	dwellInSeconds: {title:"Dwell in seconds", description:"Specifies the unit for dwelling, set to 'Yes' for seconds and 'No' for milliseconds.", group:1, type:"boolean"},
-	forceWorkOffset: {title:"Force work offset", description:"Forces the work offset code at tool changes.", group:1, type:"boolean"},
-	maxTool: {title:"Maximum tool number", description:"Enter the maximum tool number allowed by the control.", group:1, type:"number"},
+	toolChangeAtEnd: 
+	{
+		title: "Tool change at end",
+		description: "add a final tool change after the program finishes",
+		type: "enum",
+		value: "None",
+		group: afterFinishedGroup,
+		values:
+		[
+			{title:"None", id:"none"}, 
+			{title:"First in program", id:"first"}, 
+			{title:"Specific - see tool to load", id:"specific"},
+		]
+		},
+
+	toolNumberAtEnd:
+	{
+		title: "Tool to load",
+		description: "If 'Specific tool is selected above, enter the tool number to load'",
+		type:"integer", value: 1,
+		group: afterFinishedGroup
+	},
+
+	retractOnProgramBegin: {title:"Retract before Program  start", description:"Retract opertion before start of program", type: "enum", group:retractiionGroup,
+	values:[
+		{title:"None", id:"none"}, 
+		{title:"G30 - z only", id:"g30z"}, 
+		{title:"G30 - z, then xy", id:"g30zxy"},
+		{title:"G28 - z only", id:"g28z"}, 
+		{title:"G28 - z, then xy", id:"g28zxy"},
+	], value: "None"},
+	
+	retractOnProgramEnd: {title:"Retract after program end", description:"Retract operation after end of program", type: "enum", group:retractiionGroup,
+	values:[
+		{title:"None", id:"none"}, 
+		{title:"G30 - z only", id:"g30z"}, 
+		{title:"G30 - z, then xy", id:"g30zxy"},
+		{title:"G28 - z only", id:"g28z"}, 
+		{title:"G28 - z, then xy", id:"g28zxy"},
+	], value: "g30z"},
+
+	retractOnTCBegin: {title:"Retract before tool change", description:"Retract operation before each tool change", type: "enum", group:retractiionGroup,
+	values:[
+		{title:"None", id:"none"}, 
+		{title:"G30 - z only", id:"g30z"}, 
+		{title:"G30 - z, then xy", id:"g30zxy"},
+		{title:"G28 - z only", id:"g28z"}, 
+		{title:"G28 - z, then xy", id:"g28zxy"},
+	], value: "g30z"},
+
+	retractOnTCEnd: {title:"Retract after tool change", description:"Retract operation after each tool change", type: "enum", group:retractiionGroup,
+	values:[
+		{title:"None", id:"none"}, 
+		{title:"G30 - z only", id:"g30z"}, 
+		{title:"G30 - z, then xy", id:"g30zxy"},
+		{title:"G28 - z only", id:"g28z"}, 
+		{title:"G28 - z, then xy", id:"g28zxy"},
+	], value: "none"},
+
+	retractOnWCSChange: {title:"Retract on WCS change", description:"Retract operation when moving from one WCS to another", type: "enum", group:retractiionGroup,
+	values:[
+		{title:"None", id:"none"}, 
+		{title:"G30 - z only", id:"g30z"}, 
+		{title:"G30 - z, then xy", id:"g30zxy"},
+		{title:"G28 - z only", id:"g28z"}, 
+		{title:"G28 - z, then xy", id:"g28zxy"},
+	], value: "g30z"},
+
+	retractOnWorkPlaneChange: {title:"Retract on work plane change", description:"Retract operation when changing work plane (A axis move)", type: "enum", group:retractiionGroup,
+	values:[
+		{title:"None", id:"none"}, 
+		{title:"G30 - z only", id:"g30z"}, 
+		{title:"G30 - z, then xy", id:"g30zxy"},
+		{title:"G28 - z only", id:"g28z"}, 
+		{title:"G28 - z, then xy", id:"g28zxy"},
+	], value: "g30z"},
+
+	retractOnManualNCStop: {title:"Retract on ManualNC Stop", description:"Retract operation before M0", type: "enum", group:retractiionGroup,
+	values:[
+		{title:"None", id:"none"}, 
+		{title:"G30 - z only", id:"g30z"}, 
+		{title:"G30 - z, then xy", id:"g30zxy"},
+		{title:"G28 - z only", id:"g28z"}, 
+		{title:"G28 - z, then xy", id:"g28zxy"},
+	], value: "none"},
+
+	retractOnManualNCOptionalStop: {title:"Retract on ManualNC Optional Stop", description:"Retract operation before M1", type: "enum", group:retractiionGroup,
+	values:[
+		{title:"None", id:"none"}, 
+		{title:"G30 - z only", id:"g30z"}, 
+		{title:"G30 - z, then xy", id:"g30zxy"},
+		{title:"G28 - z only", id:"g28z"}, 
+		{title:"G28 - z, then xy", id:"g28zxy"},
+	], value: "none"},
+
+	//	substituteRapidAfterRetract: false,
+	
+	useM6: {title:"Use M6", description:"Disable to avoid outputting M6.", group:machineConfigGroup, type:"boolean", value: true},
+
+	showSequenceNumbers: {title:"Use sequence numbers", description:"Use sequence numbers for each block of outputted code.", group:machineConfigGroup, type:"boolean", value: false},
+
+	sequenceNumberStart: {title:"Start sequence number", description:"The number at which to start the sequence numbers.", group:machineConfigGroup, type:"integer", value: 10},
+
+	sequenceNumberIncrement: {title:"Sequence number increment", description:"The amount by which the sequence number is incremented by in each block.", group:machineConfigGroup, type:"integer", value: 10},
+
+	sequenceNumberOperation: {title:"Sequence number at operation only", description:"Use sequence numbers at start of operation only.", group:machineConfigGroup, type:"boolean", value: true},
+
+	optionalStopTool: {title:"Optional stop between tools", description:"Outputs optional stop code prior to a tool change.", group:machineConfigGroup, type:"boolean", value: true},
+
+	optionalStopOperation: {title:"Optional stop between operations", description:"Outputs optional stop code prior between all operations.", group:machineConfigGroup, type:"boolean", value: false},
+
+	separateWordsWithSpace: {title:"Separate words with space", description:"Adds spaces between words if 'yes' is selected.", group:machineConfigGroup, type:"boolean", value: true},
+
+	useRadius: {title:"Radius arcs", description:"If yes is selected, arcs are outputted using radius values rather than IJK.", group:machineConfigGroup, type:"boolean", value: false},
+
+	dwellInSeconds: {title:"Dwell in seconds", description:"Specifies the unit for dwelling, set to 'Yes' for seconds and 'No' for milliseconds.", group:machineConfigGroup, type:"boolean", value: true},
+
+	forceWorkOffset: {title:"Force work offset", description:"Forces the work offset code at tool changes.", group:machineConfigGroup, type:"boolean", value: false},
+
 	rotaryTableAxis: {
 		title: "Rotary table axis",
 		description: "Select rotary table axis. Check the table direction on the machine and use the (Reversed) selection if the table is moving in the opposite direction.",
 		type: "enum",
-		group:1,
+		group:machineConfigGroup,
 		values:[
 		{title:"No rotary", id:"none"},
 		{title:"X", id:"x"},
@@ -147,80 +199,38 @@ propertyDefinitions = {
 		{title:"X (Reversed)", id:"-x"},
 		{title:"Y (Reversed)", id:"-y"},
 		{title:"Z (Reversed)", id:"-z"}
-		]
+		],
+		value:"none"
 	},
 
-	retractOnProgramBegin: {title:"Retract before Program  start", description:"Retract opertion before start of program", type: "enum", group:2,
-	values:[
-		{title:"None", id:"none"}, 
-		{title:"G30 - z only", id:"g30z"}, 
-		{title:"G30 - z, then xy", id:"g30zxy"},
-		{title:"G28 - z only", id:"g28z"}, 
-		{title:"G28 - z, then xy", id:"g28zxy"},
-	]},
-	retractOnProgramEnd: {title:"Retract after program end", description:"Retract operation after end of program", type: "enum", group:2,
-	values:[
-		{title:"None", id:"none"}, 
-		{title:"G30 - z only", id:"g30z"}, 
-		{title:"G30 - z, then xy", id:"g30zxy"},
-		{title:"G28 - z only", id:"g28z"}, 
-		{title:"G28 - z, then xy", id:"g28zxy"},
-	]},
-	retractOnTCBegin: {title:"Retract before tool change", description:"Retract operation before each tool change", type: "enum", group:2,
-	values:[
-		{title:"None", id:"none"}, 
-		{title:"G30 - z only", id:"g30z"}, 
-		{title:"G30 - z, then xy", id:"g30zxy"},
-		{title:"G28 - z only", id:"g28z"}, 
-		{title:"G28 - z, then xy", id:"g28zxy"},
-	]},
-	retractOnTCEnd: {title:"Retract after tool change", description:"Retract operation after each tool change", type: "enum", group:2,
-	values:[
-		{title:"None", id:"none"}, 
-		{title:"G30 - z only", id:"g30z"}, 
-		{title:"G30 - z, then xy", id:"g30zxy"},
-		{title:"G28 - z only", id:"g28z"}, 
-		{title:"G28 - z, then xy", id:"g28zxy"},
-	]},
-	retractOnWCSChange: {title:"Retract on WCS change", description:"Retract operation when moving from one WCS to another", type: "enum", group:2,
-	values:[
-		{title:"None", id:"none"}, 
-		{title:"G30 - z only", id:"g30z"}, 
-		{title:"G30 - z, then xy", id:"g30zxy"},
-		{title:"G28 - z only", id:"g28z"}, 
-		{title:"G28 - z, then xy", id:"g28zxy"},
-	]},
-	retractOnWorkPlaneChange: {title:"Retract on work plane change", description:"Retract operation when changing work plane (A axis move)", type: "enum", group:2,
-	values:[
-		{title:"None", id:"none"}, 
-		{title:"G30 - z only", id:"g30z"}, 
-		{title:"G30 - z, then xy", id:"g30zxy"},
-		{title:"G28 - z only", id:"g28z"}, 
-		{title:"G28 - z, then xy", id:"g28zxy"},
-	]},
-	retractOnManualNCStop: {title:"Retract on ManualNC Stop", description:"Retract operation when changing work plane (A axis move)", type: "enum", group:2,
-	values:[
-		{title:"None", id:"none"}, 
-		{title:"G30 - z only", id:"g30z"}, 
-		{title:"G30 - z, then xy", id:"g30zxy"},
-		{title:"G28 - z only", id:"g28z"}, 
-		{title:"G28 - z, then xy", id:"g28zxy"},
-	]},
-//	substituteRapidAfterRetract: {title: "Rapid after retract",
-//			description:"Replace linear moves following retracts with rapid moves",
-//			type:"boolean", group:2
-//		},
+	smartCoolEquipped: {title:"SmartCool equipped", description:"Specifies if the machine has the SmartCool attachment.", group:coolantGroup, type:"boolean", value: false},
+	
+	multiCoolEquipped: {title:"Multi-Coolant equipped", description:"Specifies if the machine has the Multi-Coolant module.", group:coolantGroup, type:"boolean", value: false},
 
+	smartCoolToolSweepPercentage: {title:"SmartCool sweep percentage", description:"Sets the tool length percentage to sweep coolant.", group:coolantGroup,type:"integer", value: 100},
 
-	// probing settings
-	probeFastSpeed: {title: "Fast probing speed (inch/min)", description: "Fast probing speed (inch/min)", type:"number", group:3},
-	probeSlowSpeed: {title: "Slow probing speed (inch/min)", description: "Slow probing speed (inch/min)", type:"number", group:3},
-	probeSlowDistance: {title: "Slow probe distance (inch)", description: "Slow probe distance (inch)", type:"number", group:3},
+	multiCoolAirBlastSeconds: {title:"Multi-Coolant air blast in seconds", description:"Sets the Multi-Coolant air blast time in seconds.", group:coolantGroup,type:"integer", value: 4},
+
+	disableCoolant: {title:"Disable coolant", description:"Disable all coolant codes.", group:coolantGroup,type:"boolean", value: false},
+
+	reversingHead: {title:"Use self-reversing tapping head", description:"Expanded cycles are output with a self-reversing tapping head.", group:tappingGroup, type:"boolean", value: false},
+
+	reversingHeadFeed: {title:"Self-reversing head feed ratio", description:"The percentage of the tapping feedrate for retracting the tool.", group:tappingGroup, type:"number", value:2.0},
+
+	maxTool: {title:"Maximum tool number", description:"Enter the maximum tool number allowed by the control.", group:machineConfigGroup, type:"number", value: 256},
+	
+	// properties controlling integrated probing
+	probeFastSpeed: {title: "Fast probing speed (inch/min)", description: "Fast probing speed (inch/min)", type:"number", group:probingGroup, value: 20.0},
+
+	probeSlowSpeed: {title: "Slow probing speed (inch/min)", description: "Slow probing speed (inch/min)", type:"number", group:probingGroup, value: 1.0},
+
+	probeSlowDistance: {title: "Slow probe distance (inch)", description: "Slow probe distance (inch)", type:"number", group:probingGroup, value: 0.04},
 
 	// properties to control tool setter functions
-	etsTolerance: {title: "Tolerance for ETS checks (inch)", description: "Tolerance allowed for tool lengths for ETS checks", type:"number", group:4},
-	etsDiameterLimit: {title: "ETS diameter limit (inch)", descriptopn: "Tools larger than this will not be checked by the tool setter", type: "number", group:4},
-	
+	etsTolerance: {title: "Tolerance for ETS checks (inch)", description: "Tolerance allowed for tool lengths for ETS checks", type:"number", group:etsGroup, value: 0.005},
+
+	etsDiameterLimit: {title: "ETS diameter limit (inch)", descriptopn: "Tools larger than this will not be checked by the tool setter", type: "number", group:etsGroup, value: 0.5},
+
 	etsBeforeStart: 
 	{
 		title: "ETS op before start",
@@ -232,7 +242,8 @@ propertyDefinitions = {
 			{title: "Check", id:"check"},
 			{title: "Set", id:"set"},
 			],
-			group:4
+			group:etsGroup,
+			value: "none"
 	},
 	
 	etsBeforeUse:
@@ -246,7 +257,8 @@ propertyDefinitions = {
 			{title: "Check", id:"check"},
 			{title: "Set", id:"set"},
 			],
-			group:4
+			group:etsGroup,
+			value: "none"
 	},
 	
 	etsAfterUse:
@@ -260,7 +272,8 @@ propertyDefinitions = {
 			{title: "Check", id:"check"},
 			{title: "Set", id:"set"},
 			],
-			group:4
+			group:etsGroup,
+			value: "none"
 	},
 	
 	etsAfterOperation:
@@ -274,16 +287,22 @@ propertyDefinitions = {
 			{title: "Check", id:"check"},
 			{title: "Set", id:"set"},
 			],
-			group:4
+			group:etsGroup,
+			value: "none"
 	},
 	
 
-	expandTapping: {title:"Expand tapping", description:"Expand tapping for machines without canned cycle tapping", group:5, type:"boolean"},
-	tapSpeedFactor: {title:"Tap speed factor", description:"Spindle speed correction factor for tapping tools.  Only for 440 where spindle speed cannot be adjusted.  Leave at 1.0 otherwise", group:5, type:"number"},
+
+	
+	//properties to allow tapping on a PCNC440
+	expandTapping: {title:"Expand tapping", description:"Expand tapping code for machines without canned cycle tapping", group:tappingGroup, type:"boolean", value: false},
+
+	tapSpeedFactor: {title:"Tap speed factor", description:"For expanded tapping code only. Spindle speed correction factor for tapping tools.  Leave at 1.0 otherwise", group:tappingGroup, type:"number", value: 1.0},
+
 	spindleReverseChannel: 
 	{
 		title: "Spindle reversing",
-		description: "Choose M4 for standard spindle reversing, one of the others for reverse controlled by USB I/O module",
+		description: "For expanded tapping code only. Choose M4 for standard spindle reversing, one of the others for reverse controlled by USB I/O module",
 		type: "enum",
 		values:
 			[
@@ -305,9 +324,10 @@ propertyDefinitions = {
 			{title: "M3 M64 P14", id:"15"},
 			{title: "M3 M64 P15", id:"16"},
 			],
-			group:5
+			group:tappingGroup,
+			value: "0"
 	},
-
+	
 	// properties to use usb i/o module
 	spindleRunningChannel:
 	{
@@ -338,7 +358,8 @@ propertyDefinitions = {
 			{title: "Board 4, output 3", id:"15"},
 			{title: "Board 4, output 4", id:"16"},
 			],
-			group:6
+			group:usbIoGroup,
+			value: "0"
 	},
 
 	toolChangeInProgressChannel:
@@ -370,7 +391,8 @@ propertyDefinitions = {
 			{title: "Board 4, output 3", id:"15"},
 			{title: "Board 4, output 4", id:"16"},
 			],
-			group:6
+			group:usbIoGroup,
+			value: "0"
 	},
 
 	floodCoolingOnChannel:
@@ -402,7 +424,8 @@ propertyDefinitions = {
 			{title: "Board 4, output 3", id:"15"},
 			{title: "Board 4, output 4", id:"16"},
 			],
-			group:6
+			group:usbIoGroup,
+			value: "0"
 	},
 
 	mistCoolingOnChannel:
@@ -434,7 +457,8 @@ propertyDefinitions = {
 			{title: "Board 4, output 3", id:"15"},
 			{title: "Board 4, output 4", id:"16"},
 			],
-			group:6
+			group:usbIoGroup,
+			value: "0"
 	},
 
 	etsInUseChannel:
@@ -466,7 +490,8 @@ propertyDefinitions = {
 			{title: "Board 4, output 3", id:"15"},
 			{title: "Board 4, output 4", id:"16"},
 			],
-			group:6
+			group:usbIoGroup,
+			value: "0"
 	},
 
 	etsReadyInput:
@@ -498,8 +523,10 @@ propertyDefinitions = {
 			{title: "Board 4, input 3", id:"15"},
 			{title: "Board 4, input 4", id:"16"},
 			],
-			group:6
+			group:usbIoGroup,
+			value: "0"
 	},
+
 	progRunningChannel:
 	{
 		title: "I/O Program running",
@@ -529,7 +556,8 @@ propertyDefinitions = {
 			{title: "Board 4, output 3", id:"15"},
 			{title: "Board 4, output 4", id:"16"},
 			],
-			group:6
+			group:usbIoGroup,
+			value: "0"
 	},
 
 	probeInUseChannel:
@@ -561,20 +589,11 @@ propertyDefinitions = {
 			{title: "Board 4, output 3", id:"15"},
 			{title: "Board 4, output 4", id:"16"},
 			],
-			group:6
+			group:usbIoGroup,
+			value: "0"
 	},
-
-	smartCoolEquipped: {title:"SmartCool equipped", description:"Specifies if the machine has the SmartCool attachment.", group:7, type:"boolean"},
-	multiCoolEquipped: {title:"Multi-Coolant equipped", description:"Specifies if the machine has the Multi-Coolant module.", group:7, type:"boolean"},
-	smartCoolToolSweepPercentage: {title:"SmartCool sweep percentage", description:"Sets the tool length percentage to sweep coolant.", group:7,type:"integer"},
-	multiCoolAirBlastSeconds: {title:"Multi-Coolant air blast in seconds", description:"Sets the Multi-Coolant air blast time in seconds.", group:7,type:"integer"},
-	disableCoolant: {title:"Disable coolant", description:"Disable all coolant codes.", group:7,type:"boolean"},
-	reversingHead: {title:"Use self-reversing tapping head", description:"Expanded cycles are output with a self-reversing tapping head.", group:8, type:"boolean"},
-	reversingHeadFeed: {title:"Self-reversing head feed ratio", description:"The percentage of the tapping feedrate for retracting the tool.", group:8, type:"number"},
-
+	
 };
-
-
 
 var permittedCommentChars = " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,=_-*#<>";
 
@@ -654,10 +673,10 @@ var inspectFeatureno=1;
 
 function formatSequenceNumber() {
   if (sequenceNumber > 99999) {
-    sequenceNumber = properties.sequenceNumberStart;
+    sequenceNumber = getProperty("sequenceNumberStart");
   }
   var seqno = nFormat.format(sequenceNumber);
-  sequenceNumber += properties.sequenceNumberIncrement;
+  sequenceNumber += getProperty("sequenceNumberIncrement");
   return seqno;
 }
 
@@ -668,9 +687,9 @@ function writeBlock() {
   if (!formatWords(arguments)) {
     return;
   }
-  if (properties.showSequenceNumbers) {
+  if (getProperty("showSequenceNumbers")) {
     writeWords2(formatSequenceNumber(), arguments);
-    sequenceNumber += properties.sequenceNumberIncrement;
+    sequenceNumber += getProperty("sequenceNumberIncrement");
   } else {
     writeWords(arguments);
   }
@@ -729,7 +748,7 @@ function UseToolWithETS(tool)
 		return true;
 
 	// don't attempt to check tools that are too big for the ets
-	if (tool.diameter > (unit == MM ? 25.4 : 1) * properties.etsDiameterLimit)
+	if (tool.diameter > (unit == MM ? 25.4 : 1) * getProperty("etsDiameterLimit"))
 	{
 		writeComment("Skipping ETS functions for tool " + tool.number + ", " + toolTypeName + ", too big for the tool setter");
 		return false;
@@ -764,10 +783,10 @@ function CheckCurrentTool(tool)
 		onCommand(COMMAND_COOLANT_OFF);
 		onCommand(COMMAND_STOP_SPINDLE);
 	
-		TurnOutputOn(properties.etsInUseChannel);
-		WaitForInputON(properties.etsReadyInput);
-		writeBlock(gFormat.format(37), "P" + xyzFormat.format((unit == MM ? 25.4 : 1) * properties.etsTolerance));
-		TurnOutputOff(properties.etsInUseChannel);
+		TurnOutputOn(getProperty("etsInUseChannel"));
+		WaitForInputON(getProperty("etsReadyInput"));
+		writeBlock(gFormat.format(37), "P" + xyzFormat.format((unit == MM ? 25.4 : 1) * getProperty("etsTolerance")));
+		TurnOutputOff(getProperty("etsInUseChannel"));
 	}
 }
 
@@ -779,10 +798,10 @@ function SetCurrentTool(tool)
 		onCommand(COMMAND_COOLANT_OFF);
 		onCommand(COMMAND_STOP_SPINDLE);
 	
-		TurnOutputOn(properties.etsInUseChannel);
-		WaitForInputON(properties.etsReadyInput);
+		TurnOutputOn(getProperty("etsInUseChannel"));
+		WaitForInputON(getProperty("etsReadyInput"));
 		writeBlock(gFormat.format(37));
-		TurnOutputOff(properties.etsInUseChannel);
+		TurnOutputOff(getProperty("etsInUseChannel"));
 		}
 }
 
@@ -798,18 +817,18 @@ function onOpen()
 	// install my expand tapping handler
 	expandTapping = myExpandTapping;
 
-	if (properties.useRadius) 
+	if (getProperty("useRadius")) 
 	{
 		maximumCircularSweep = toRad(90); // avoid potential center calculation errors for CNC
 	}
 
-	if (properties.sequenceNumberOperation) 
+	if (getProperty("sequenceNumberOperation")) 
 	{
-		properties.showSequenceNumbers = false;
+		setProperty("showSequenceNumbers", false);
 	}
 
 	// Define rotary attributes from properties
-	var rotary = parseChoice(properties.rotaryTableAxis, "-Z", "-Y", "-X", "NONE", "X", "Y", "Z");
+	var rotary = parseChoice(getProperty("rotaryTableAxis"), "-Z", "-Y", "-X", "NONE", "X", "Y", "Z");
 	if (rotary < 0) 
 	{
 		error(localize("Valid rotaryTableAxis values are: None, X, Y, Z, -X, -Y, -Z"));
@@ -846,12 +865,12 @@ function onOpen()
 		cOutput.disable();
 	}
   
-	if (!properties.separateWordsWithSpace) 
+	if (!getProperty("separateWordsWithSpace")) 
 	{
 		setWordSeparator("");
 	}
 
-	sequenceNumber = properties.sequenceNumberStart;
+	sequenceNumber = getProperty("sequenceNumberStart");
 
 	writeln("%");
 	if (programName) 
@@ -864,7 +883,7 @@ function onOpen()
 		writeComment(programComment);
 	}
 
-	if (properties.writeVersion) 
+	if (getProperty("writeVersion")) 
 	{
 		if (typeof getHeaderVersion == "function" && getHeaderVersion()) 
 		{
@@ -881,7 +900,7 @@ function onOpen()
 	var model = machineConfiguration.getModel();
 	var description = machineConfiguration.getDescription();
 
-	if (properties.writeMachine && (vendor || model || description)) 
+	if (getProperty("writeMachine") && (vendor || model || description)) 
 	{
 		writeComment(localize("Machine"));
 		if (vendor) 
@@ -899,7 +918,7 @@ function onOpen()
 	}
 
 	// dump tool information
-	if (properties.writeTools) 
+	if (getProperty("writeTools"))
 	{
 		var zRanges = {};
 		if (is3D()) 
@@ -917,31 +936,32 @@ function onOpen()
 					zRanges[tool.number] = zRange;
 			}
 		}
+
+		var tools = getToolTable();
+		if (tools.getNumberOfTools() > 0) 
+		{
+			writeComment("Tool table");
+			for (var i = 0; i < tools.getNumberOfTools(); ++i) 
+			{
+				var tool = tools.getTool(i);
+				var comment = "T" + toolFormat.format(tool.number) + "  " +
+					"D=" + xyzFormat.format(tool.diameter) + " " +
+				localize("CR") + "=" + xyzFormat.format(tool.cornerRadius);
+				if ((tool.taperAngle > 0) && (tool.taperAngle < Math.PI)) 
+				{
+					comment += " " + localize("TAPER") + "=" + taperFormat.format(tool.taperAngle) + localize("deg");
+				}
+				if (zRanges[tool.number]) 
+				{
+					comment += " - " + localize("ZMIN") + "=" + xyzFormat.format(zRanges[tool.number].getMinimum());
+				}
+				comment += " - " + getToolTypeName(tool.type);
+				writeComment(comment);
+			}
+			writeComment("Tool table end");
+		}
 	}
 
-    var tools = getToolTable();
-    if (tools.getNumberOfTools() > 0) 
-	{
-		writeComment("Tool table");
-		for (var i = 0; i < tools.getNumberOfTools(); ++i) 
-		{
-			var tool = tools.getTool(i);
-			var comment = "T" + toolFormat.format(tool.number) + "  " +
-				"D=" + xyzFormat.format(tool.diameter) + " " +
-			localize("CR") + "=" + xyzFormat.format(tool.cornerRadius);
-			if ((tool.taperAngle > 0) && (tool.taperAngle < Math.PI)) 
-			{
-				comment += " " + localize("TAPER") + "=" + taperFormat.format(tool.taperAngle) + localize("deg");
-			}
-			if (zRanges[tool.number]) 
-			{
-				comment += " - " + localize("ZMIN") + "=" + xyzFormat.format(zRanges[tool.number].getMinimum());
-			}
-			comment += " - " + getToolTypeName(tool.type);
-			writeComment(comment);
-		}
-		writeComment("Tool table end");
-    }
 	
 	if (false) 
 	{
@@ -1002,21 +1022,21 @@ function onOpen()
 	retracted = false;
 
 	// optional retract before start of program
-	UserRetract(properties.retractOnProgramBegin, "before start of program");
+	UserRetract(getProperty("retractOnProgramBegin"), "before start of program");
 
 	// write probing variables
 	writeComment("Probing control variables");
-	writeBlock("#<_probeFastSpeed>=", xyzFormat.format((unit == MM ? 25.4 : 1) * properties.probeFastSpeed));
-	writeBlock("#<_probeSlowSpeed>=", xyzFormat.format((unit == MM ? 25.4 : 1) * properties.probeSlowSpeed));
-	writeBlock("#<_probeSlowDistance>=", xyzFormat.format((unit == MM ? 25.4 : 1) * properties.probeSlowDistance));
+	writeBlock("#<_probeFastSpeed>=", xyzFormat.format((unit == MM ? 25.4 : 1) * getProperty("probeFastSpeed")));
+	writeBlock("#<_probeSlowSpeed>=", xyzFormat.format((unit == MM ? 25.4 : 1) * getProperty("probeSlowSpeed")));
+	writeBlock("#<_probeSlowDistance>=", xyzFormat.format((unit == MM ? 25.4 : 1) * getProperty("probeSlowDistance")));
 
 	// turn on the g-code running output
-	TurnOutputOn(properties.progRunningChannel);
+	TurnOutputOn(getProperty("progRunningChannel"));
 
-	if (properties.etsBeforeStart != "none")
+	if (getProperty("etsBeforeStart") != "none")
 	{
 		// some ets function requested before start of program
-		writeComment("Use ETS to " + properties.etsBeforeStart + " tools before start of run");
+		writeComment("Use ETS to " + getProperty("etsBeforeStart") + " tools before start of run");
 		var tools = getToolTable();
 		for (var i = 0; i < tools.getNumberOfTools(); ++i) 
 		{
@@ -1028,12 +1048,12 @@ function onOpen()
 				continue;
 			
 			writeComment("Load tool " + tool.number);
-			UserRetract(properties.retractOnTCBegin, "prior to toolchange");
+			UserRetract(getProperty("retractOnTCBegin"), "prior to toolchange");
 			writeBlock("T" + toolFormat.format(tool.number), gFormat.format(43), hFormat.format(tool.number), mFormat.format(6));
 			onDwell(1.0);
-			UserRetract(properties.retractOnTCEnd, "after tool change");
+			UserRetract(getProperty("retractOnTCEnd"), "after tool change");
 
-			switch (properties.etsBeforeStart)
+			switch (getProperty("etsBeforeStart"))
 			{
 			case "set":
 				SetCurrentTool(tool);
@@ -1145,11 +1165,16 @@ function onParameter(name, value)
   }
 }
 
-function onComment(message) {
-  var comments = String(message).split(";");
-  for (comment in comments) {
-    writeComment(comments[comment]);
-  }
+var lastComment;
+
+function onComment(message) 
+{
+  	var comments = String(message).split(";");
+  	for (comment in comments) 
+  	{
+		lastComment = comments[comment];
+    	writeComment(lastComment);
+  	}
 }
 
 /** Force output of X, Y, and Z. */
@@ -1297,8 +1322,110 @@ function getWorkPlaneMachineABC(workPlane)
 }
 var measureToolRequested = false;
 
+function LoadTool(toolNumber, toolLengthOffset)
+{
+	writeComment("Loading tool " + toolNumber + " with offset " + toolLengthOffset);
+	// change tool
+	UserRetract(getProperty("retractOnTCBegin"), "prior to toolchange");
+	TurnOutputOn(getProperty("toolChangeInProgressChannel"));
+
+	if (getProperty("useM6")) 
+	{
+		writeBlock("T" + toolFormat.format(toolNumber),
+		gFormat.format(43),
+		hFormat.format(toolLengthOffset),
+		mFormat.format(6));
+	} 
+	else 
+	{
+		writeBlock("T" + toolFormat.format(toolNumber), gFormat.format(43), hFormat.format(toolLengthOffset));
+	}
+
+	TurnOutputOff(getProperty("toolChangeInProgressChannel"));
+	UserRetract(getProperty("retractOnTCEnd"), "after toolchange");
+}
+
+function ChangeToTool(tool)
+{
+	forceWorkPlane();
+	onCommand(COMMAND_COOLANT_OFF);
+	onCommand(COMMAND_STOP_SPINDLE);
+
+	if (tool.number > getProperty("maxTool")) 
+	{
+		warning(localize("Tool number exceeds maximum value."));
+	}
+
+	var lengthOffset = tool.lengthOffset;
+	if (lengthOffset > getProperty("maxTool")) 
+	{
+		error(localize("Length offset out of range."));
+		return;
+	}
+
+	// time to check the outgoing tool
+	// ETS check of outgoing tool
+	if (!isFirstSection())
+	{
+		var previousTool = getPreviousSection().getTool();
+		switch (getProperty("etsAfterUse"))
+		{
+			case "check":
+				CheckCurrentTool(previousTool);
+				break;
+			
+			case "set":
+				SetCurrentTool(previousTool);
+				break;
+		}
+	}
+
+	// change tool
+	LoadTool(tool.number, lengthOffset);
+
+	// time to do ets processing for the new tool
+	switch (getProperty("etsBeforeUse"))
+	{
+		case "check":
+			CheckCurrentTool(tool);
+			break;
+	
+		case "set":
+			SetCurrentTool(tool);
+			break;
+	}
+
+	if (tool.comment) 
+	{
+		writeComment(tool.comment);
+	}
+
+	var showToolZMin = false;
+	if (showToolZMin) 
+	{
+		if (is3D()) 
+		{
+			var numberOfSections = getNumberOfSections();
+			var zRange = currentSection.getGlobalZRange();
+			var number = tool.number;
+			for (var i = currentSection.getId() + 1; i < numberOfSections; ++i) 
+			{
+				var section = getSection(i);
+				if (section.getTool().number != number) 
+				{
+					break;
+				}
+				zRange.expandToRange(section.getGlobalZRange());
+			}
+			writeComment(localize("ZMIN") + "=" + zRange.getMinimum());
+		}
+	}
+} // ChangeToTool
+
+
 function onSection() 
 {
+	lastComment = null;
 	// are we changing the tool ?
 	var insertToolCall = isFirstSection() ||
 		currentSection.getForceToolChange && currentSection.getForceToolChange() ||
@@ -1324,10 +1451,10 @@ function onSection()
 		if (!isFirstSection() && !insertToolCall)
 		{
 			if (newWorkOffset)
-				UserRetract(properties.retractOnWCSChange, "new WCS");
+				UserRetract(getProperty("retractOnWCSChange"), "new WCS");
 		
 			if (newWorkPlane)
-				UserRetract(properties.retractOnWorkPlaneChange, "new work plane");
+				UserRetract(getProperty("retractOnWorkPlaneChange"), "new work plane");
 		}
 			
 		forceWorkPlane();
@@ -1340,7 +1467,7 @@ function onSection()
 		var comment = getParameter("operation-comment");
 		if (comment) 
 		{
-			if (properties.sequenceNumberOperation) 
+			if (getProperty("sequenceNumberOperation")) 
 			{
 				writeCommentSeqno(comment);
 			} 
@@ -1352,105 +1479,15 @@ function onSection()
 	}
 
 	// optional stop
-	if (!isFirstSection() && ((insertToolCall && properties.optionalStopTool) || properties.optionalStopOperation))
+	if (!isFirstSection() && ((insertToolCall && getProperty("optionalStopTool")) || getProperty("optionalStopOperation")))
 	{
 		onCommand(COMMAND_OPTIONAL_STOP);
 	}
 
 	// tool change
 	if (insertToolCall) 
-	{
-		forceWorkPlane();
-		onCommand(COMMAND_COOLANT_OFF);
-		onCommand(COMMAND_STOP_SPINDLE);
+		ChangeToTool(tool);
 
-		if (tool.number > properties.maxTool) 
-		{
-			warning(localize("Tool number exceeds maximum value."));
-		}
-	
-		var lengthOffset = tool.lengthOffset;
-		if (lengthOffset > properties.maxTool) 
-		{
-			error(localize("Length offset out of range."));
-			return;
-		}
-
-		// time to check the outgoing tool
-		// ETS check of outgoing tool
-		if (!isFirstSection())
-		{
-			var previousTool = getPreviousSection().getTool();
-			switch (properties.etsAfterUse)
-			{
-				case "check":
-					CheckCurrentTool(previousTool);
-					break;
-				
-				case "set":
-					SetCurrentTool(previousTool);
-					break;
-			}
-		}
-	
-		// change tool
-		UserRetract(properties.retractOnTCBegin, "prior to toolchange");
-		TurnOutputOn(properties.toolChangeInProgressChannel);
-
-		if (properties.useM6) 
-		{
-			writeBlock("T" + toolFormat.format(tool.number),
-			gFormat.format(43),
-			hFormat.format(lengthOffset),
-			mFormat.format(6));
-		} 
-		else 
-		{
-			writeBlock("T" + toolFormat.format(tool.number), gFormat.format(43), hFormat.format(lengthOffset));
-		}
-	
-		TurnOutputOff(properties.toolChangeInProgressChannel);
-		UserRetract(properties.retractOnTCEnd, "after toolchange");
-
-		// time to do ets processing for the new tool
-		switch (properties.etsBeforeUse)
-		{
-			case "check":
-				CheckCurrentTool(tool);
-				break;
-		
-			case "set":
-				SetCurrentTool(tool);
-				break;
-		}
-
-		if (tool.comment) 
-		{
-			writeComment(tool.comment);
-		}
-
-		var showToolZMin = false;
-		if (showToolZMin) 
-		{
-			if (is3D()) 
-			{
-				var numberOfSections = getNumberOfSections();
-				var zRange = currentSection.getGlobalZRange();
-				var number = tool.number;
-				for (var i = currentSection.getId() + 1; i < numberOfSections; ++i) 
-				{
-					var section = getSection(i);
-					if (section.getTool().number != number) 
-					{
-						break;
-					}
-					zRange.expandToRange(section.getGlobalZRange());
-				}
-				writeComment(localize("ZMIN") + "=" + zRange.getMinimum());
-			}
-		}
-	} // if (InsertToolCall)
-  
 	// manual nc requested tool measure
 	if (measureToolRequested)
 	{
@@ -1518,7 +1555,7 @@ function onSection()
 	} // set spindle
 
 	// wcs
-	if (insertToolCall && properties.forceWorkOffset) 
+	if (insertToolCall && getProperty("forceWorkOffset")) 
 	{ 
 		// force work offset when changing tool
 		currentWorkOffset = undefined;
@@ -1608,7 +1645,7 @@ function onSection()
 	if (!insertToolCall && retracted) 
 	{ // G43 already called above on tool change
 		var lengthOffset = tool.lengthOffset;
-		if (lengthOffset > properties.maxTool) 
+		if (lengthOffset > getProperty("maxTool")) 
 		{
 			error(localize("Length offset out of range."));
 			return;
@@ -1662,7 +1699,7 @@ function onDwell(seconds)
 	if (seconds > 99999.999) 
 		warning(localize("Dwelling time is out of range."));
 
-	if (properties.dwellInSeconds) 
+	if (getProperty("dwellInSeconds")) 
 		writeBlock(gFormat.format(4), "P" + secFormat.format(seconds));
 	else 
 	{
@@ -1682,13 +1719,13 @@ function setCoolant(coolant, topOfPart)
 	coolantZHeight = 9999.0;
 	var coolantCode = 9;
 
-	if (properties.disableCoolant) 
+	if (getProperty("disableCoolant")) 
 	{
 		return coolCodes;
 	}
   
 	// Smart coolant is not enabled
-	if (!properties.smartCoolEquipped) 
+	if (!getProperty("smartCoolEquipped")) 
 	{
 		if (coolant == COOLANT_OFF) 
 		{
@@ -1721,11 +1758,11 @@ function setCoolant(coolant, topOfPart)
 			coolantCode = 8;
 			coolCodes[0] = coolantOutput.format(coolantCode);
 			// coolCodes[0] = mFormat.format(coolantCode);
-			if (properties.multiCoolEquipped) 
+			if (getProperty("multiCoolEquipped")) 
 			{
-				if (properties.multiCoolAirBlastSeconds != 0) 
+				if (getProperty("multiCoolAirBlastSeconds") != 0) 
 				{
-					coolCodes[3] = qFormat.format(properties.multiCoolAirBlastSeconds);
+					coolCodes[3] = qFormat.format(getProperty("multiCoolAirBlastSeconds"));
 				}
 			} 
 			else 
@@ -1787,7 +1824,7 @@ function setCoolant(coolant, topOfPart)
 				else 
 				{
 					coolCodes[1] = "P" + coolantOptionFormat.format(0);
-					coolCodes[2] = "R" + xyzFormat.format(tool.fluteLength * (properties.smartCoolToolSweepPercentage / 100.0));
+					coolCodes[2] = "R" + xyzFormat.format(tool.fluteLength * (getProperty("smartCoolToolSweepPercentage") / 100.0));
 				}
 			}
 		}
@@ -1798,20 +1835,20 @@ function setCoolant(coolant, topOfPart)
 	{
 		case 7:
 			// mist coolant
-			TurnOutputOn(properties.mistCoolingOnChannel);
-			TurnOutputOff(properties.floodCoolingOnChannel);
+			TurnOutputOn(getProperty("mistCoolingOnChannel"));
+			TurnOutputOff(getProperty("floodCoolingOnChannel"));
 			break;
 			
 		case 8:
 			// flood coolant
-			TurnOutputOn(properties.floodCoolingOnChannel);
-			TurnOutputOff(properties.mistCoolingOnChannel);
+			TurnOutputOn(getProperty("floodCoolingOnChannel"));
+			TurnOutputOff(getProperty("mistCoolingOnChannel"));
 			break;
 			
 		case 9:
 			// no coolant
-			TurnOutputOff(properties.floodCoolingOnChannel);
-			TurnOutputOff(properties.mistCoolingOnChannel);
+			TurnOutputOff(getProperty("floodCoolingOnChannel"));
+			TurnOutputOff(getProperty("mistCoolingOnChannel"));
 			break;
 	}
 	
@@ -1836,7 +1873,7 @@ function expandTappingPoint(x, y, z)
 {
 	onExpandedRapid(x, y, cycle.clearance);
 	onExpandedLinear(x, y, z, cycle.feedrate);
-	onExpandedLinear(x, y, cycle.clearance, cycle.feedrate * properties.reversingHeadFeed);
+	onExpandedLinear(x, y, cycle.clearance, cycle.feedrate * getProperty("reversingHeadFeed"));
 }
 
 // some functions to support probing operations
@@ -1913,7 +1950,7 @@ function onCyclePoint(x, y, z)
     	var P = !cycle.dwell ? 0 : cycle.dwell; // in seconds
 
 		// Adjust SmartCool to top of part if it changes    // Adjust SmartCool to top of part if it changes
-		if (properties.smartCoolEquipped && xyzFormat.areDifferent((z + cycle.depth), coolantZHeight)) 
+		if (getProperty("smartCoolEquipped") && xyzFormat.areDifferent((z + cycle.depth), coolantZHeight)) 
 		{
       		var c = setCoolant(currentCoolantMode, z + cycle.depth);
 			if (c)
@@ -1978,9 +2015,9 @@ function onCyclePoint(x, y, z)
 		);
 		break;
 		case "tapping":
-			if (tool.type == TOOL_TAP_LEFT_HAND || properties.expandTapping)
+			if (getProperty("expandTapping"))
 				expandCyclePoint(x, y, z);
-			else if (properties.reversingHead) 
+			else if (getProperty("reversingHead")) 
 			{
 				expandTappingPoint(x, y, z);
 			} 
@@ -1992,7 +2029,7 @@ function onCyclePoint(x, y, z)
 				}
 				writeBlock(sOutput.format(spindleSpeed));
 				writeBlock(
-					gRetractModal.format(98), gAbsIncModal.format(90), gCycleModal.format(84),
+					gRetractModal.format(98), gAbsIncModal.format(90), gCycleModal.format((tool.type == TOOL_TAP_LEFT_HAND) ? 74 : 84),
 					getCommonCycle(x, y, z, cycle.retract),
 					conditional(P > 0, "P" + secFormat.format(P)),
 					feedOutput.format(F)
@@ -2000,26 +2037,30 @@ function onCyclePoint(x, y, z)
 			}
 		break;
 		case "left-tapping":
-		if (properties.expandTapping)
-			expandCyclePoint(x, y, z);
-		else if (properties.reversingHead) {
-			expandTappingPoint(x, y, z);
-		} else {
-			if (!F) {
-			F = tool.getTappingFeedrate();
-			}
-			writeBlock(
-			gRetractModal.format(98), gAbsIncModal.format(90), gCycleModal.format(84),
-			getCommonCycle(x, y, z, cycle.retract),
-			conditional(P > 0, "P" + secFormat.format(P)),
-			feedOutput.format(F)
-			);
-		}
-		break;
-		case "right-tapping":
-		if (properties.expandTapping)
+			if (getProperty("expandTapping"))
 				expandCyclePoint(x, y, z);
-		else if (properties.reversingHead) {
+			else if (getProperty("reversingHead")) 
+			{
+				expandTappingPoint(x, y, z);
+			} 
+			else 
+			{
+				if (!F) 
+				{
+					F = tool.getTappingFeedrate();
+				}
+				writeBlock(
+					gRetractModal.format(98), gAbsIncModal.format(90), gCycleModal.format(74),
+					getCommonCycle(x, y, z, cycle.retract),
+					conditional(P > 0, "P" + secFormat.format(P)),
+					feedOutput.format(F)
+					);
+			}
+			break;
+		case "right-tapping":
+		if (getProperty("expandTapping"))
+				expandCyclePoint(x, y, z);
+		else if (getProperty("reversingHead")) {
 			expandTappingPoint(x, y, z);
 		} else {
 			if (!F) {
@@ -2108,7 +2149,7 @@ function onCyclePoint(x, y, z)
 		case "probing-x":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2123,7 +2164,7 @@ function onCyclePoint(x, y, z)
 			 	formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2133,7 +2174,7 @@ function onCyclePoint(x, y, z)
 		case "probing-y":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2148,7 +2189,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2158,7 +2199,7 @@ function onCyclePoint(x, y, z)
 		case "probing-z":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2173,7 +2214,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2183,7 +2224,7 @@ function onCyclePoint(x, y, z)
 		case "probing-x-wall":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2198,7 +2239,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2207,7 +2248,7 @@ function onCyclePoint(x, y, z)
 		case "probing-y-wall":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2222,7 +2263,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2231,7 +2272,7 @@ function onCyclePoint(x, y, z)
 		case "probing-x-channel":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2246,7 +2287,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2255,7 +2296,7 @@ function onCyclePoint(x, y, z)
 		case "probing-x-channel-with-island":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2270,7 +2311,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2279,7 +2320,7 @@ function onCyclePoint(x, y, z)
 		case "probing-y-channel":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2294,7 +2335,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2303,7 +2344,7 @@ function onCyclePoint(x, y, z)
 		case "probing-y-channel-with-island":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2318,7 +2359,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2327,7 +2368,7 @@ function onCyclePoint(x, y, z)
 		case "probing-xy-circular-boss":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2342,7 +2383,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2351,7 +2392,7 @@ function onCyclePoint(x, y, z)
 		case "probing-xy-circular-partial-boss":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2369,7 +2410,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probeAngleFormat.format(cycle.partialCircleAngleC)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2378,7 +2419,7 @@ function onCyclePoint(x, y, z)
 		case "probing-xy-circular-hole":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2393,7 +2434,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2402,7 +2443,7 @@ function onCyclePoint(x, y, z)
 		case "probing-xy-circular-hole-with-island":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2417,7 +2458,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2426,7 +2467,7 @@ function onCyclePoint(x, y, z)
 		case "probing-xy-circular-partial-hole":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2444,7 +2485,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probeAngleFormat.format(cycle.partialCircleAngleC)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2453,7 +2494,7 @@ function onCyclePoint(x, y, z)
 		case "probing-xy-circular-partial-hole-with-island":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2471,7 +2512,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probeAngleFormat.format(cycle.partialCircleAngleC)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2480,7 +2521,7 @@ function onCyclePoint(x, y, z)
 		case "probing-xy-rectangular-hole":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2496,7 +2537,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2505,7 +2546,7 @@ function onCyclePoint(x, y, z)
 		case "probing-xy-rectangular-boss":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2521,7 +2562,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2530,7 +2571,7 @@ function onCyclePoint(x, y, z)
 		case "probing-xy-rectangular-hole-with-island":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2546,7 +2587,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2555,7 +2596,7 @@ function onCyclePoint(x, y, z)
 		case "probing-xy-inner-corner":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2571,7 +2612,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2581,7 +2622,7 @@ function onCyclePoint(x, y, z)
 		case "probing-xy-outer-corner":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2597,7 +2638,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(probe100Format.format(probeOutputWorkOffset)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2607,7 +2648,7 @@ function onCyclePoint(x, y, z)
 		case "probing-x-plane-angle":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2623,7 +2664,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(xyzFormat.format(cycle.probeSpacing)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2635,7 +2676,7 @@ function onCyclePoint(x, y, z)
 		case "probing-y-plane-angle":
 			writeComment(cycleType);
 			ShowProbeHeader();
-			TurnOutputOn(properties.probeInUseChannel);
+			TurnOutputOn(getProperty("probeInUseChannel"));
 			writeBlock(formatSubroutineCall(cycleType),
 				formatParameter(xyzFormat.format(x)),
 				formatParameter(xyzFormat.format(y)),
@@ -2651,7 +2692,7 @@ function onCyclePoint(x, y, z)
 				formatParameter(xyzFormat.format(cycle.probeSpacing)),
 				getProbingArguments(cycle)
 				);
-			TurnOutputOff(properties.probeInUseChannel);
+			TurnOutputOff(getProperty("probeInUseChannel"));
 
 			// probing may change the motion mode, so it needs to be re-established in the next move
 			forceXYZ();
@@ -2672,7 +2713,7 @@ function onCyclePoint(x, y, z)
 		{
       		expandCyclePoint(x, y, z);
 		} 
-		else if (((cycleType == "tapping") || (cycleType == "right-tapping") || (cycleType == "left-tapping")) && properties.reversingHead)
+		else if (((cycleType == "tapping") || (cycleType == "right-tapping") || (cycleType == "left-tapping")) && getProperty("reversingHead"))
 		{
       		expandTappingPoint(x, y, z);
 		} 
@@ -2715,7 +2756,7 @@ function myExpandTapping(x, y, z)
 	onRapid(x, y, cycle.clearance);
 
 	// spindle on
-	onSpindleSpeed(tool.spindleRPM * properties.tapSpeedFactor);
+	onSpindleSpeed(tool.spindleRPM * getProperty("tapSpeedFactor"));
 	if (tool.clockwise)
 		onCommand(COMMAND_SPINDLE_CLOCKWISE);
 	else
@@ -2742,14 +2783,10 @@ function myExpandTapping(x, y, z)
 	// linear back up to retract height
 	onLinear(x, y, cycle.retract, feedRate);
 	
-	//if (cycle.dwell > 0)
-    //    writeBlock(gFormat.format(4), "P" + secFormat.format(cycle.dwell));
-	
 	// rapid back up to clearance
 	onRapid(x, y, cycle.clearance);
 
     // spindle on forward again
-	//onSpindleSpeed(tool.spindleRPM * properties.tapSpeedFactor);
 	if (tool.clockwise)
 		onCommand(COMMAND_SPINDLE_CLOCKWISE);
 	else
@@ -2812,7 +2849,7 @@ function onLinear(_x, _y, _z, feed)
 		{
 			pendingRadiusCompensation = -1;
 			var d = tool.diameterOffset;
-			if (d > properties.maxTool) 
+			if (d > getProperty("maxTool")) 
 			{
 				warning(localize("The diameter offset exceeds the maximum value."));
 			}
@@ -3217,7 +3254,7 @@ function onCircular(clockwise, cx, cy, cz, x, y, z, feed) {
   var start = getCurrentPosition();
 
   if (isFullCircle()) {
-    if (properties.useRadius || isHelical()) { // radius mode does not support full arcs
+    if (getProperty("useRadius") || isHelical()) { // radius mode does not support full arcs
       linearize(tolerance);
       return;
     }
@@ -3234,7 +3271,7 @@ function onCircular(clockwise, cx, cy, cz, x, y, z, feed) {
     default:
       linearize(tolerance);
     }
-  } else if (!properties.useRadius) {
+  } else if (!getProperty("useRadius")) {
     switch (getCircularPlane()) {
     case PLANE_XY:
       writeBlock(gAbsIncModal.format(90), gPlaneModal.format(17), gFeedModeModal.format(94), gMotionModal.format(clockwise ? 2 : 3), xOutput.format(x), yOutput.format(y), zOutput.format(z), iOutput.format(cx - start.x, 0), jOutput.format(cy - start.y, 0), feedOutput.format(feed));
@@ -3271,7 +3308,7 @@ function onCircular(clockwise, cx, cy, cz, x, y, z, feed) {
 
 var mapCommand = {
   //COMMAND_STOP:0,
-  COMMAND_OPTIONAL_STOP:1,
+  //COMMAND_OPTIONAL_STOP:1,
   COMMAND_END:2,
   //COMMAND_SPINDLE_CLOCKWISE:3,
   //COMMAND_SPINDLE_COUNTERCLOCKWISE:4,
@@ -3287,10 +3324,27 @@ function onCommand(command)
 	switch (command) 
 	{
 		case COMMAND_STOP:
-			UserRetract(properties.retractOnManualNCStop, "Manual NC Stop");
-			writeBlock(mFormat.format(0));
+			UserRetract(getProperty("retractOnManualNCStop"), "Manual NC Stop");
+			if (lastComment != null)
+			{
+				writeBlock(mFormat.format(0), formatComment(lastComment));
+				lastComment = null;
+			}
+			else
+				writeBlock(mFormat.format(0));
 			return;
 
+		case COMMAND_OPTIONAL_STOP:
+			UserRetract(getProperty("retractOnManualNCOptionalStop"), "Manual NC Optional Stop");
+			if (lastComment != null)
+			{
+				writeBlock(mFormat.format(1), formatComment(lastComment));
+				lastComment = null;
+			}
+			else
+				writeBlock(mFormat.format(1));
+			return;
+	
 		case COMMAND_START_SPINDLE:
 			onCommand(tool.clockwise ? COMMAND_SPINDLE_CLOCKWISE : COMMAND_SPINDLE_COUNTERCLOCKWISE);
 			return;
@@ -3312,31 +3366,31 @@ function onCommand(command)
 
 		case COMMAND_SPINDLE_CLOCKWISE:
 			writeComment("Spindle clockwise");
-			TurnOutputOn(properties.spindleRunningChannel);
-			TurnOutputOff(properties.spindleReverseChannel);
+			TurnOutputOn(getProperty("spindleRunningChannel"));
+			TurnOutputOff(getProperty("spindleReverseChannel"));
 			writeBlock(spindleOutput.format(3));
 			return;
 
 		case COMMAND_SPINDLE_COUNTERCLOCKWISE:
 			writeComment("Spindle anti-clockwise");
-			TurnOutputOn(properties.spindleRunningChannel);
-			if (properties.spindleReverseChannel == "0")
+			TurnOutputOn(getProperty("spindleRunningChannel"));
+			if (getProperty("spindleReverseChannel") == "0")
 				writeBlock(spindleOutput.format(4));
 			else
 			{
-				TurnOutputOn(properties.spindleReverseChannel);
+				TurnOutputOn(getProperty("spindleReverseChannel"));
 				writeBlock(spindleOutput.format(3));
 			}
 			return;
 
 		case COMMAND_STOP_SPINDLE:
-			TurnOutputOff(properties.spindleRunningChannel);
+			TurnOutputOff(getProperty("spindleRunningChannel"));
 			writeBlock(spindleOutput.format(5));
 			return;
 
 		case COMMAND_COOLANT_OFF:
-			TurnOutputOff(properties.floodCoolingOnChannel);
-			TurnOutputOff(properties.mistCoolingOnChannel);
+			TurnOutputOff(getProperty("floodCoolingOnChannel"));
+			TurnOutputOff(getProperty("mistCoolingOnChannel"));
 			writeBlock(coolantOutput.format(9));
 			return;
 	}
@@ -3363,7 +3417,7 @@ function onSectionEnd()
 	}
 
 	// process ets operations at end of section
-	switch (properties.etsAfterOperation)
+	switch (getProperty("etsAfterOperation"))
 	{
 		case "check":
 			onCommand(COMMAND_BREAK_CONTROL);
@@ -3427,7 +3481,7 @@ function UserRetract(retractMode, reason)
 			break;
 
 		case "g28z":
-			writeBlock(gAbsIncModal.format(91), gFormat.format(28), "Z", xyzFormat.format(0.0));
+			writeBlock(gAbsIncModal.format(91), gFormat.format(28), "Z" + xyzFormat.format(0.0));
 			writeBlock(gAbsIncModal.format(90));
 			gMotionModal.reset();
 			forceXYZ();
@@ -3435,8 +3489,8 @@ function UserRetract(retractMode, reason)
 			break;
 
 		case "g28zxy":
-			writeBlock(gAbsIncModal.format(91), gFormat.format(28), "Z", xyzFormat.format(0.0));
-			writeBlock(gAbsIncModal.format(91), gFormat.format(28), "X", xyzFormat.format(0.0), "Y", xyzFormat.format(0.0));
+			writeBlock(gAbsIncModal.format(91), gFormat.format(28), "Z" + xyzFormat.format(0.0));
+			writeBlock(gAbsIncModal.format(91), gFormat.format(28), "X" + xyzFormat.format(0.0), "Y" + xyzFormat.format(0.0));
 			writeBlock(gAbsIncModal.format(90));
 			gMotionModal.reset();
 			forceXYZ();
@@ -3444,151 +3498,47 @@ function UserRetract(retractMode, reason)
 			break;
 	}
 }
-/** Output block to do safe retract and/or move to home position. */
-/*
-function writeRetract() 
-{
-	// initialize routine
-	var _xyzMoved = new Array(false, false, false);
-	var _useG28 = properties.useG28; // can be either true or false
-	var _useG30 = properties.useG30; // can be either true or false
 
-	// check syntax of call
-	if (arguments.length == 0) 
-	{
-		error(localize("No axis specified for writeRetract()."));
-		return;
-	}
-
-	for (var i = 0; i < arguments.length; ++i) 
-	{
-		if ((arguments[i] < 0) || (arguments[i] > 2)) 
-		{
-			error(localize("Bad axis specified for writeRetract()."));
-			return;
-		}
-    
-		if (_xyzMoved[arguments[i]]) 
-		{
-			error(localize("Cannot retract the same axis twice in one line"));
-			return;
-		}
-		_xyzMoved[arguments[i]] = true;
-	}
-  
-	// special conditions
-	if (_xyzMoved[2] && (_xyzMoved[0] || _xyzMoved[1])) 
-	{ 
-		// XY don't use G28
-		error(localize("You cannot move home in XY & Z in the same block."));
-		return;
-	}
-  
-	if (_xyzMoved[0] != _xyzMoved[1]) 
-	{
-		error(localize("X & Y must be moved to home in the same block."));
-		return;
-	}
-	if (_xyzMoved[0] || _xyzMoved[1]) 
-	{
-		_useG30 = false;
-	}
-	if (_xyzMoved[2]) 
-	{
-		_useG28 = false;
-	}
-
-	// define home positions
-	var _xHome;
-	var _yHome;
-	var _zHome;
-	
-	if (_useG28) 
-	{
-		_xHome = 0;
-		_yHome = 0;
-		_zHome = 0;
-	} 
-	else 
-	{
-		if (properties.homePositionCenter &&
-			hasParameter("part-upper-x") && hasParameter("part-lower-x")) 
-		{
-			_xHome = (getParameter("part-upper-x") + getParameter("part-lower-x")) / 2;
-		} 
-		else 
-		{
-			_xHome = machineConfiguration.hasHomePositionX() ? machineConfiguration.getHomePositionX() : 0;
-		}
-    
-		_yHome = machineConfiguration.hasHomePositionY() ? machineConfiguration.getHomePositionY() : 0;
-		_zHome = machineConfiguration.getRetractPlane();
-	}
-
-	// format home positions
-	var words = []; // store all retracted axes in an array
-	for (var i = 0; i < arguments.length; ++i) 
-	{
-		// define the axes to move
-		switch (arguments[i]) 
-		{
-		case X:
-			words.push("X" + xyzFormat.format(_xHome));
-			break;
-		case Y:
-			words.push("Y" + xyzFormat.format(_yHome));
-			break;
-		case Z:
-			words.push("Z" + xyzFormat.format(_zHome));
-			retracted = true;
-			break;
-		}
-	}
-
-	// output move to home
-	if (words.length > 0) 
-	{
-		if (_useG28) 
-		{
-			writeBlock(gFormat.format(28));
-		} 
-		else if (_useG30) 
-		{
-			writeComment("Retracting Z");
-			writeBlock(gFormat.format(30));
-		}
-
-		// force any axes that move to home on next block
-		if (_xyzMoved[0]) 
-		{
-			xOutput.reset();
-		}
-		if (_xyzMoved[1]) 
-		{
-			yOutput.reset();
-		}
-    
-		if (_xyzMoved[2]) 
-		{
-			zOutput.reset();
-		}
-	}
-}
-*/
 function onClose() 
 {
 	writeln("");
 	writeComment("Post-amble");
 	onCommand(COMMAND_COOLANT_OFF);
 	onCommand(COMMAND_STOP_SPINDLE);
-	onImpliedCommand(COMMAND_END);
 
-	UserRetract(properties.retractOnProgramEnd, "after end of program");
+	var changeMode = getProperty("toolChangeAtEnd");
+	switch (changeMode)
+	{
+		case "none":
+			break;
+
+		case "first":
+			LoadTool(getSection(0).getTool().number, getSection(0).getTool().lengthOffset);
+			break;
+
+		case "specific":
+			LoadTool(getProperty("toolNumberAtEnd"), getProperty("toolNumberAtEnd"));
+			break;
+
+		default:
+			writeComment("Don't understand " + changeMode);
+			break;
+	}
+
+	UserRetract(getProperty("retractOnProgramEnd"), "after end of program");
 	setWorkPlane(new Vector(0, 0, 0)); // reset working plane
 
 	// turn off the g-code running output
-	TurnOutputOff(properties.progRunningChannel);
+	TurnOutputOff(getProperty("progRunningChannel"));
 	
+	onImpliedCommand(COMMAND_END);
+
 	writeBlock(mFormat.format(30)); // stop program, spindle stop, coolant off
 	writeln("%");
 }
+
+function setProperty(property, value) 
+{
+	properties[property].current = value;
+}
+  
